@@ -22,3 +22,10 @@ class_name = "Room"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+# Kho sách riêng (Cloudflare R2) — phục vụ /sach/*. BẬT SAU KHI đã tạo bucket "thu-vien-sach"
+# (Cloudflare → R2 → Create bucket). Bucket chưa tồn tại mà bật thì bản dựng sẽ lỗi, nên để chú thích tới lúc đó.
+# Xem hướng dẫn: docs/KHO-SACH-RIENG.md trong repo doviettu/like.
+# [[r2_buckets]]
+# binding = "SACH"
+# bucket_name = "thu-vien-sach"

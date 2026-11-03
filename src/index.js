@@ -30,6 +30,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname === '/health') return new Response('Lên Chùa Cầu An — máy chủ phòng chùa đang chạy 🙏', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    if (url.pathname === '/sach' || url.pathname.startsWith('/sach/')) return sach(req, env, url); // kho sách riêng (R2)
     const m = url.pathname.match(/^\/room\/([a-z0-9-]{1,32})$/);
     if (!m) return env.ASSETS ? env.ASSETS.fetch(req) : new Response('không có', { status: 404 }); // trang game & file tĩnh
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('cần WebSocket', { status: 426 });
@@ -39,6 +40,43 @@ export default {
     return env.ROOM.get(env.ROOM.idFromName(m[1])).fetch(req);
   }
 };
+
+/* ---------------------------------------------------------------------
+   KHO SÁCH RIÊNG (Cloudflare R2, binding SACH — xem wrangler.toml)
+   - Bucket chia 2 vùng: "luu-tru/" = bản sao lưu riêng, KHÔNG BAO GIỜ phát ra ngoài;
+     "cong-khai/" = chỉ những cuốn chủ game đã xác nhận được phép phát hành (ấn tống, được tác giả cho phép…)
+   - GET /sach/danh-sach        → {"files": ["<id>.pdf", ...]} (các tệp trong cong-khai/)
+   - GET /sach/<id>.pdf|.epub   → tệp, hỗ trợ Range để trình đọc PDF tải từng phần
+   --------------------------------------------------------------------- */
+const SACH_FILE = /^[A-Za-z0-9_-]{10,80}\.(pdf|epub)$/, SACH_PREFIX = 'cong-khai/';
+const SACH_TYPE = { pdf: 'application/pdf', epub: 'application/epub+zip' };
+async function sach(req, env, url) {
+  const origin = req.headers.get('Origin') || '', allow = (env.ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const h = new Headers({ 'x-content-type-options': 'nosniff' });
+  if (origin && (origin === url.origin || allow.includes(origin))) { h.set('access-control-allow-origin', origin); h.set('vary', 'Origin'); }
+  if (req.method === 'OPTIONS') { h.set('access-control-allow-methods', 'GET, HEAD'); h.set('access-control-allow-headers', 'Range'); return new Response(null, { status: 204, headers: h }); }
+  if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('chỉ đọc', { status: 405, headers: h });
+  const name = url.pathname.slice('/sach/'.length);
+  if (name === 'danh-sach') {
+    const files = [];
+    if (env.SACH) { let cursor; do { const r = await env.SACH.list({ prefix: SACH_PREFIX, cursor, limit: 1000 }); for (const o of r.objects) { const f = o.key.slice(SACH_PREFIX.length); if (SACH_FILE.test(f)) files.push(f); } cursor = r.truncated ? r.cursor : undefined; } while (cursor); }
+    h.set('content-type', 'application/json; charset=utf-8'); h.set('cache-control', 'public, max-age=300');
+    return new Response(JSON.stringify({ files, kho: !!env.SACH }), { headers: h });
+  }
+  if (!env.SACH || !SACH_FILE.test(name)) return new Response('không có sách này', { status: 404, headers: h });
+  const obj = await env.SACH.get(SACH_PREFIX + name, { range: req.headers, onlyIf: req.headers });
+  if (!obj) return new Response('không có sách này', { status: 404, headers: h });
+  obj.writeHttpMetadata(h); h.set('etag', obj.httpEtag); h.set('accept-ranges', 'bytes'); h.set('cache-control', 'public, max-age=86400');
+  h.set('content-type', SACH_TYPE[name.split('.').pop()]); h.set('content-disposition', `inline; filename="${name}"`);
+  if (!('body' in obj)) return new Response(null, { status: 304, headers: h });
+  if (obj.range && req.headers.has('range')) {
+    const off = obj.range.offset ?? 0, len = obj.range.length ?? (obj.size - off);
+    h.set('content-range', `bytes ${off}-${off + len - 1}/${obj.size}`); h.set('content-length', String(len));
+    return new Response(req.method === 'HEAD' ? null : obj.body, { status: 206, headers: h });
+  }
+  h.set('content-length', String(obj.size));
+  return new Response(req.method === 'HEAD' ? null : obj.body, { headers: h });
+}
 
 export class Room {
   constructor(ctx, env) { this.ctx = ctx; this.env = env; }
