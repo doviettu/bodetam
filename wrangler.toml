@@ -23,9 +23,8 @@ class_name = "Room"
 tag = "v1"
 new_sqlite_classes = ["Room"]
 
-# Kho sách riêng (Cloudflare R2) — phục vụ /sach/*. BẬT SAU KHI đã tạo bucket "thu-vien-sach"
-# (Cloudflare → R2 → Create bucket). Bucket chưa tồn tại mà bật thì bản dựng sẽ lỗi, nên để chú thích tới lúc đó.
-# Xem hướng dẫn: docs/KHO-SACH-RIENG.md trong repo doviettu/like.
-# [[r2_buckets]]
-# binding = "SACH"
-# bucket_name = "thu-vien-sach"
+# Kho sách riêng (Cloudflare R2) — phục vụ /sach/*. Chỉ vùng cong-khai/ được phát ra ngoài;
+# vùng luu-tru/ là bản sao lưu riêng, Worker không bao giờ đọc. Hướng dẫn: docs/KHO-SACH-RIENG.md (repo doviettu/like).
+[[r2_buckets]]
+binding = "SACH"
+bucket_name = "thu-vien-sach"
