@@ -17,3 +17,14 @@ Kiểm tra máy chủ: mở `https://bodetam.<subdomain>.workers.dev/health`.
 Durable Objects: 100.000 request mỗi ngày (đặt lại lúc 7 giờ sáng giờ Việt Nam). Vượt mức thì game tự quay về chơi một mình với khách hành hương AI.
 
 Mã nguồn phát triển & lịch sử: https://github.com/doviettu/like
+
+## Cấu hình Cloudflare (Workers Builds)
+| Mục | Giá trị |
+|---|---|
+| Git repository | `doviettu/bodetam` |
+| Production branch | `main` |
+| Build command | *(để trống)* |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+
+Tên Worker trên Cloudflare phải là `bodetam` (trùng `name` trong `wrangler.toml`).
