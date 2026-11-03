@@ -3,6 +3,7 @@
 name = "bodetam"
 main = "src/index.js"
 compatibility_date = "2025-04-01"
+preview_urls = false
 
 # Trang game & file tĩnh; đường dẫn /room/* không có file nên đi vào Worker
 [assets]
