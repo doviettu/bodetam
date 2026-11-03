@@ -1,0 +1,23 @@
+# Worker "bodetam": phục vụ game (public/) + máy chủ phòng chùa (Durable Objects)
+# Cloudflare Workers Builds tự chạy `npx wrangler deploy` mỗi khi repo có commit mới.
+name = "bodetam"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+
+# Trang game & file tĩnh; đường dẫn /room/* không có file nên đi vào Worker
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[vars]
+# Các trang khác (ngoài chính bodetam.*.workers.dev) được phép kết nối phòng chùa
+ALLOW_ORIGINS = "https://doviettu.github.io"
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+# Gói miễn phí chỉ dùng được Durable Objects loại SQLite
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

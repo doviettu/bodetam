@@ -1,0 +1,12 @@
+{
+  "name": "bodetam",
+  "private": true,
+  "description": "Lên Chùa Cầu An — game web 3D và máy chủ phòng chùa trên Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.17"
+  }
+}
